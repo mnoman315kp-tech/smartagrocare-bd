@@ -25,7 +25,7 @@ app.post("/chat", async (req, res) => {
 
     // UPDATED: Using a stable model name (1.5-flash) to prevent model-not-found errors
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash", 
+      model: "gemini-2.5-flash", 
     });
 
     const prompt = `
