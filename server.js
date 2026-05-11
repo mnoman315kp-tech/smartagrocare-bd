@@ -12,25 +12,74 @@ const upload = multer();
 app.use(cors());
 app.use(express.json());
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+/* ================================
+   DEBUG ENV VARIABLES
+================================ */
+
+console.log(
+  "GEMINI API KEY EXISTS:",
+  !!process.env.GEMINI_API_KEY
+);
+
+console.log(
+  "GEMINI API KEY START:",
+  process.env.GEMINI_API_KEY?.slice(0, 10)
+);
+
+const genAI = new GoogleGenerativeAI(
+  process.env.GEMINI_API_KEY
+);
 
 /* ================================
    CHAT BOT API
 ================================ */
 
 app.post("/chat", async (req, res) => {
-  try {
-    const { message, disease } = req.body;
 
+  try {
+
+    console.log("CHAT ROUTE HIT");
+
+    console.log(
+      "API KEY EXISTS:",
+      !!process.env.GEMINI_API_KEY
+    );
+
+    console.log(
+      "API KEY VALUE:",
+      process.env.GEMINI_API_KEY?.slice(0, 10)
+    );
+
+    console.log(
+      "REQUEST BODY:",
+      req.body
+    );
+
+    const {
+      message,
+      disease,
+    } = req.body;
+
+    // ✅ VALIDATION
     if (!message) {
+
+      console.log(
+        "❌ MESSAGE MISSING"
+      );
+
       return res.status(400).json({
         error: "Message is required",
       });
     }
 
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
-    });
+    console.log(
+      "Creating Gemini model..."
+    );
+
+    const model =
+      genAI.getGenerativeModel({
+        model: "gemini-1.5-flash",
+      });
 
     const prompt = `
 You are Smart AgroCare AI Assistant.
@@ -47,17 +96,41 @@ User Question:
 ${message}
 `;
 
-    const result = await model.generateContent(prompt);
+    console.log(
+      "Sending prompt to Gemini..."
+    );
 
-    const reply = result.response.text();
+    const result =
+      await model.generateContent(
+        prompt
+      );
 
-    res.json({ reply });
+    console.log(
+      "Gemini response success"
+    );
+
+    const reply =
+      result.response.text();
+
+    console.log(
+      "AI REPLY:",
+      reply
+    );
+
+    res.json({
+      reply,
+    });
 
   } catch (error) {
-    console.log("CHAT ERROR:", error);
+
+    console.log(
+      "CHAT ERROR:",
+      error
+    );
 
     res.status(500).json({
-      error: "Failed to generate AI response",
+      error:
+        "Failed to generate AI response",
     });
   }
 });
@@ -70,22 +143,26 @@ app.post(
   "/check-quality",
   upload.single("image"),
   async (req, res) => {
+
     try {
-      // ❌ No image uploaded
+
+      // ❌ NO IMAGE
       if (!req.file) {
+
         return res.status(400).json({
           quality: "bad",
-          reason: "No image uploaded",
+          reason:
+            "No image uploaded",
         });
       }
 
-      // ✅ Simple fake logic for now
-      // Later you can connect OpenCV / AI model
+      // ✅ SIMPLE TEST LOGIC
+      const imageSize =
+        req.file.size;
 
-      const imageSize = req.file.size;
-
-      // Too small image
+      // ❌ TOO SMALL
       if (imageSize < 50000) {
+
         return res.json({
           quality: "bad",
           reason:
@@ -93,17 +170,22 @@ app.post(
         });
       }
 
-      // Good image
+      // ✅ GOOD IMAGE
       return res.json({
         quality: "good",
       });
 
     } catch (error) {
-      console.log("QUALITY CHECK ERROR:", error);
+
+      console.log(
+        "QUALITY CHECK ERROR:",
+        error
+      );
 
       res.status(500).json({
         quality: "bad",
-        reason: "Server error while checking image",
+        reason:
+          "Server error while checking image",
       });
     }
   }
@@ -114,15 +196,24 @@ app.post(
 ================================ */
 
 app.get("/", (req, res) => {
-  res.send("Smart AgroCare Backend Running");
+
+  res.send(
+    "Smart AgroCare Backend Running"
+  );
+
 });
 
 /* ================================
    SERVER
 ================================ */
 
-const PORT = process.env.PORT || 8080;
+const PORT =
+  process.env.PORT || 8080;
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+
+  console.log(
+    `Server running on port ${PORT}`
+  );
+
 });
