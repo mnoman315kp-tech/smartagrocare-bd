@@ -1,10 +1,9 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import cors from "cors";
-import dotenv from "dotenv";
 import express from "express";
 import multer from "multer";
 
-dotenv.config();
+
 
 const app = express();
 const upload = multer();
