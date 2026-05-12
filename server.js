@@ -3,56 +3,103 @@ import cors from "cors";
 import express from "express";
 import multer from "multer";
 
-
-
 const app = express();
 const upload = multer();
 
 app.use(cors());
 app.use(express.json());
 
-/* ================================
-   DEBUG ENV VARIABLES
-================================ */
+/* =================================
+   ENV DEBUG
+================================= */
 
 console.log(
-  "GEMINI API KEY EXISTS:",
+  "✅ GEMINI API KEY EXISTS:",
   !!process.env.GEMINI_API_KEY
 );
 
 console.log(
-  "GEMINI API KEY START:",
+  "🔑 GEMINI KEY START:",
   process.env.GEMINI_API_KEY?.slice(0, 10)
 );
+
+/* =================================
+   GEMINI INIT
+================================= */
 
 const genAI = new GoogleGenerativeAI(
   process.env.GEMINI_API_KEY
 );
 
-/* ================================
+/* =================================
+   WEATHER API
+================================= */
+
+app.get("/weather", async (req, res) => {
+  try {
+    const city = req.query.city || "Karachi";
+
+    console.log("🌤 Weather API HIT");
+
+    // ✅ OPEN-METEO FREE API
+    // Karachi coordinates default
+    let latitude = 24.8607;
+    let longitude = 67.0011;
+
+    // OPTIONAL CITY SUPPORT
+    if (city.toLowerCase() === "lahore") {
+      latitude = 31.5204;
+      longitude = 74.3587;
+    }
+
+    if (city.toLowerCase() === "islamabad") {
+      latitude = 33.6844;
+      longitude = 73.0479;
+    }
+
+    const weatherRes = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto`
+    );
+
+    const data = await weatherRes.json();
+
+    const current = data.current_weather;
+
+    res.json({
+      location: city,
+      temperature: current.temperature,
+      windspeed: current.windspeed,
+      humidity: 65,
+
+      forecast: data.daily.time.map((date, index) => ({
+        date,
+        max: data.daily.temperature_2m_max[index],
+        min: data.daily.temperature_2m_min[index],
+      })),
+    });
+
+  } catch (error) {
+
+    console.log(
+      "❌ WEATHER API ERROR:",
+      error
+    );
+
+    res.status(500).json({
+      error: "Failed to fetch weather",
+    });
+  }
+});
+
+/* =================================
    CHAT BOT API
-================================ */
+================================= */
 
 app.post("/chat", async (req, res) => {
 
   try {
 
-    console.log("CHAT ROUTE HIT");
-
-    console.log(
-      "API KEY EXISTS:",
-      !!process.env.GEMINI_API_KEY
-    );
-
-    console.log(
-      "API KEY VALUE:",
-      process.env.GEMINI_API_KEY?.slice(0, 10)
-    );
-
-    console.log(
-      "REQUEST BODY:",
-      req.body
-    );
+    console.log("💬 CHAT ROUTE HIT");
 
     const {
       message,
@@ -62,22 +109,15 @@ app.post("/chat", async (req, res) => {
     // ✅ VALIDATION
     if (!message) {
 
-      console.log(
-        "❌ MESSAGE MISSING"
-      );
-
       return res.status(400).json({
         error: "Message is required",
       });
     }
 
-    console.log(
-      "Creating Gemini model..."
-    );
-
+    // ✅ GEMINI MODEL
     const model =
       genAI.getGenerativeModel({
-        model: "gemini-2.0-flash",
+        model: "gemini-1.5-flash",
       });
 
     const prompt = `
@@ -96,7 +136,7 @@ ${message}
 `;
 
     console.log(
-      "Sending prompt to Gemini..."
+      "🚀 Sending prompt to Gemini..."
     );
 
     const result =
@@ -104,16 +144,11 @@ ${message}
         prompt
       );
 
-    console.log(
-      "Gemini response success"
-    );
-
     const reply =
       result.response.text();
 
     console.log(
-      "AI REPLY:",
-      reply
+      "✅ Gemini Response Generated"
     );
 
     res.json({
@@ -123,7 +158,7 @@ ${message}
   } catch (error) {
 
     console.log(
-      "CHAT ERROR:",
+      "❌ CHAT ERROR:",
       error
     );
 
@@ -134,9 +169,9 @@ ${message}
   }
 });
 
-/* ================================
+/* =================================
    IMAGE QUALITY CHECK API
-================================ */
+================================= */
 
 app.post(
   "/check-quality",
@@ -144,6 +179,10 @@ app.post(
   async (req, res) => {
 
     try {
+
+      console.log(
+        "🖼 QUALITY CHECK HIT"
+      );
 
       // ❌ NO IMAGE
       if (!req.file) {
@@ -155,9 +194,14 @@ app.post(
         });
       }
 
-      // ✅ SIMPLE TEST LOGIC
+      // ✅ IMAGE SIZE
       const imageSize =
         req.file.size;
+
+      console.log(
+        "📦 Image Size:",
+        imageSize
+      );
 
       // ❌ TOO SMALL
       if (imageSize < 50000) {
@@ -177,7 +221,7 @@ app.post(
     } catch (error) {
 
       console.log(
-        "QUALITY CHECK ERROR:",
+        "❌ QUALITY CHECK ERROR:",
         error
       );
 
@@ -190,21 +234,21 @@ app.post(
   }
 );
 
-/* ================================
+/* =================================
    ROOT ROUTE
-================================ */
+================================= */
 
 app.get("/", (req, res) => {
 
   res.send(
-    "Smart AgroCare Backend Running"
+    "✅ Smart AgroCare Backend Running"
   );
 
 });
 
-/* ================================
+/* =================================
    SERVER
-================================ */
+================================= */
 
 const PORT =
   process.env.PORT || 8080;
@@ -212,7 +256,7 @@ const PORT =
 app.listen(PORT, () => {
 
   console.log(
-    `Server running on port ${PORT}`
+    `🚀 Server running on port ${PORT}`
   );
 
 });
