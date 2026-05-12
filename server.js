@@ -4,9 +4,15 @@ import express from "express";
 import multer from "multer";
 
 const app = express();
+
 const upload = multer();
 
+/* =================================
+   MIDDLEWARE
+================================= */
+
 app.use(cors());
+
 app.use(express.json());
 
 /* =================================
@@ -36,57 +42,106 @@ const genAI = new GoogleGenerativeAI(
 ================================= */
 
 app.get("/weather", async (req, res) => {
+
   try {
-    const city = req.query.city || "Karachi";
 
-    console.log("🌤 Weather API HIT");
+    console.log("🌤 WEATHER API HIT");
 
-    // ✅ OPEN-METEO FREE API
-    // Karachi coordinates default
-    let latitude = 24.8607;
-    let longitude = 67.0011;
+    // ✅ GET GPS COORDINATES
+    const {
+      lat,
+      lon,
+    } = req.query;
 
-    // OPTIONAL CITY SUPPORT
-    if (city.toLowerCase() === "lahore") {
-      latitude = 31.5204;
-      longitude = 74.3587;
+    // ✅ VALIDATION
+    if (!lat || !lon) {
+
+      return res.status(400).json({
+        error:
+          "Latitude and longitude are required",
+      });
     }
 
-    if (city.toLowerCase() === "islamabad") {
-      latitude = 33.6844;
-      longitude = 73.0479;
-    }
-
-    const weatherRes = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto`
+    console.log(
+      "📍 LATITUDE:",
+      lat
     );
 
-    const data = await weatherRes.json();
+    console.log(
+      "📍 LONGITUDE:",
+      lon
+    );
 
-    const current = data.current_weather;
+    // ✅ OPEN-METEO API
+    const weatherRes = await fetch(
 
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto`
+
+    );
+
+    const data =
+      await weatherRes.json();
+
+    console.log(
+      "✅ WEATHER DATA RECEIVED"
+    );
+
+    // ✅ CURRENT WEATHER
+    const current =
+      data.current_weather;
+
+    // ✅ RESPONSE
     res.json({
-      location: city,
-      temperature: current.temperature,
-      windspeed: current.windspeed,
+
+      city:
+        data.timezone || "Unknown",
+
+      temperature:
+        current.temperature,
+
+      windspeed:
+        current.windspeed,
+
+      weathercode:
+        current.weathercode,
+
       humidity: 65,
 
-      forecast: data.daily.time.map((date, index) => ({
-        date,
-        max: data.daily.temperature_2m_max[index],
-        min: data.daily.temperature_2m_min[index],
-      })),
+      forecast:
+        data.daily.time.map(
+          (date, index) => ({
+
+            date,
+
+            max:
+              data.daily
+                .temperature_2m_max[
+                index
+              ],
+
+            min:
+              data.daily
+                .temperature_2m_min[
+                index
+              ],
+
+          })
+        ),
+
     });
 
   } catch (error) {
 
     console.log(
-      "❌ WEATHER API ERROR:",
+      "❌ WEATHER ERROR:",
       error
     );
 
     res.status(500).json({
-      error: "Failed to fetch weather",
+
+      error:
+        "Failed to fetch weather",
+
     });
   }
 });
@@ -99,7 +154,9 @@ app.post("/chat", async (req, res) => {
 
   try {
 
-    console.log("💬 CHAT ROUTE HIT");
+    console.log(
+      "💬 CHAT ROUTE HIT"
+    );
 
     const {
       message,
@@ -110,14 +167,20 @@ app.post("/chat", async (req, res) => {
     if (!message) {
 
       return res.status(400).json({
-        error: "Message is required",
+
+        error:
+          "Message is required",
+
       });
     }
 
     // ✅ GEMINI MODEL
     const model =
       genAI.getGenerativeModel({
-        model: "gemini-1.5-flash",
+
+        model:
+          "gemini-1.5-flash",
+
       });
 
     const prompt = `
@@ -136,7 +199,7 @@ ${message}
 `;
 
     console.log(
-      "🚀 Sending prompt to Gemini..."
+      "🚀 Sending Prompt to Gemini..."
     );
 
     const result =
@@ -163,8 +226,10 @@ ${message}
     );
 
     res.status(500).json({
+
       error:
         "Failed to generate AI response",
+
     });
   }
 });
@@ -174,8 +239,11 @@ ${message}
 ================================= */
 
 app.post(
+
   "/check-quality",
+
   upload.single("image"),
+
   async (req, res) => {
 
     try {
@@ -188,9 +256,12 @@ app.post(
       if (!req.file) {
 
         return res.status(400).json({
+
           quality: "bad",
+
           reason:
             "No image uploaded",
+
         });
       }
 
@@ -199,7 +270,7 @@ app.post(
         req.file.size;
 
       console.log(
-        "📦 Image Size:",
+        "📦 IMAGE SIZE:",
         imageSize
       );
 
@@ -207,15 +278,20 @@ app.post(
       if (imageSize < 50000) {
 
         return res.json({
+
           quality: "bad",
+
           reason:
             "Image is blurry or low quality. Please upload a clearer image.",
+
         });
       }
 
       // ✅ GOOD IMAGE
       return res.json({
+
         quality: "good",
+
       });
 
     } catch (error) {
@@ -226,9 +302,12 @@ app.post(
       );
 
       res.status(500).json({
+
         quality: "bad",
+
         reason:
           "Server error while checking image",
+
       });
     }
   }
