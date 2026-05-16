@@ -179,7 +179,7 @@ app.post("/chat", async (req, res) => {
       genAI.getGenerativeModel({
 
         model:
-          "gemini-2.0-flash",
+          "gemini-2.5-flash",
 
       });
 
