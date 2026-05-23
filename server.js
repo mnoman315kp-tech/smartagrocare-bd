@@ -39,66 +39,76 @@ app.get("/weather", async (req, res) => {
     if (!lat || !lon) {
 
       return res.status(400).json({
+
         error:
-          "Latitude and longitude required",
+        "Latitude and longitude required",
+
       });
 
     }
 
     const weatherRes = await fetch(
 
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto`
+`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto`
 
     );
 
     const data =
-      await weatherRes.json();
+    await weatherRes.json();
 
     const current =
-      data.current_weather;
+    data.current_weather;
 
     res.json({
 
       city:
-        data.timezone ||
 
-        "Unknown",
+      data.timezone ||
+
+      "Unknown",
 
       temperature:
-        current.temperature,
+      current.temperature,
 
       windspeed:
-        current.windspeed,
+      current.windspeed,
 
       weathercode:
-        current.weathercode,
+      current.weathercode,
 
-      humidity:
-        65,
+      humidity:65,
 
       forecast:
 
-        data.daily.time.map(
-          (date, index) => ({
+      data.daily.time.map(
 
-            date,
+        (date,index)=>({
 
-            max:
+          date,
 
-              data.daily
-                .temperature_2m_max[index],
+          max:
 
-            min:
+          data.daily
+          .temperature_2m_max[
+            index
+          ],
 
-              data.daily
-                .temperature_2m_min[index],
+          min:
 
-          })
-        ),
+          data.daily
+          .temperature_2m_min[
+            index
+          ]
+
+        })
+
+      )
 
     });
 
-  } catch (error) {
+  }
+
+  catch(error){
 
     console.log(
       "❌ WEATHER ERROR",
@@ -108,7 +118,7 @@ app.get("/weather", async (req, res) => {
     res.status(500).json({
 
       error:
-        "Weather failed",
+      "Weather failed"
 
     });
 
@@ -120,35 +130,35 @@ app.get("/weather", async (req, res) => {
    CHAT API
 ================================= */
 
-app.post("/chat", async (req, res) => {
+app.post("/chat", async (req,res)=>{
 
-  try {
+  try{
 
     const {
 
       message,
-      disease,
+      disease
 
     } = req.body;
 
-    if (!message) {
+    if(!message){
 
       return res.status(400).json({
 
         error:
-          "Message required",
+        "Message required"
 
       });
 
     }
 
     const model =
-      genAI.getGenerativeModel({
+    genAI.getGenerativeModel({
 
-        model:
-          "gemini-2.5-flash",
+      model:
+      "gemini-2.5-flash"
 
-      });
+    });
 
     const prompt = `
 
@@ -156,9 +166,9 @@ You are Smart AgroCare AI.
 
 Rules:
 
-- Only agriculture questions
-
+- Only answer agriculture questions
 - Keep concise
+- Give practical advice
 
 Disease:
 
@@ -171,29 +181,35 @@ ${message}
 `;
 
     const result =
-      await model.generateContent(
-        prompt
-      );
+    await model.generateContent(
+      prompt
+    );
 
     const reply =
-      result.response.text();
+    result.response.text();
 
     res.json({
 
-      reply,
+      reply
 
     });
 
-  } catch (error) {
+  }
+
+  catch(error){
 
     console.log(
+
+      "❌ CHAT ERROR",
+
       error
+
     );
 
     res.status(500).json({
 
       error:
-        "AI failed",
+      "AI failed"
 
     });
 
@@ -205,82 +221,107 @@ ${message}
    TRANSLATE API
 ================================= */
 
-app.post("/translate", async (req, res) => {
+app.post("/translate", async(req,res)=>{
 
-  try {
+  try{
+
+    console.log(
+      "🌐 TRANSLATE HIT"
+    );
 
     const {
 
-      text,
-      language,
+      q,
+      source,
+      target
 
     } = req.body;
 
-    if (
-      !text ||
-      !language
-    ) {
+    if(
+
+      !q ||
+
+      !target
+
+    ){
 
       return res.status(400).json({
 
         error:
-          "Text and language required",
+        "Text and target required"
 
       });
 
     }
 
-    const model =
-      genAI.getGenerativeModel({
+    const response =
+    await fetch(
 
-        model:
-          "gemini-2.5-flash",
+"https://translate.argosopentech.com/translate",
 
-      });
+      {
 
-    const prompt = `
+        method:"POST",
 
-Translate the following text to ${language}.
+        headers:{
 
-Rules:
+          "Content-Type":
+          "application/json"
 
-- Only return translated text
-- No explanation
-- Preserve agriculture meaning
+        },
 
-Text:
+        body:
 
-${text}
+        JSON.stringify({
 
-`;
+          q,
 
-    const result =
-      await model.generateContent(
-        prompt
-      );
+          source:
+          source || "en",
 
-    const translated =
-      result.response
-        .text()
-        .trim();
+          target,
+
+          format:"text"
+
+        })
+
+      }
+
+    );
+
+    const data =
+    await response.json();
+
+    console.log(
+      "✅ TRANSLATED"
+    );
 
     res.json({
 
-      translated,
+      translatedText:
+
+      data.translatedText ||
+
+      q
 
     });
 
-  } catch (error) {
+  }
+
+  catch(error){
 
     console.log(
-      "TRANSLATE ERROR",
+
+      "❌ TRANSLATE ERROR",
+
       error
+
     );
 
     res.status(500).json({
 
-      error:
-        "Translation failed",
+      translatedText:
+      req.body.q
 
     });
 
@@ -294,66 +335,66 @@ ${text}
 
 app.post(
 
-  "/check-quality",
+"/check-quality",
 
-  upload.single("image"),
+upload.single("image"),
 
-  async (req, res) => {
+async(req,res)=>{
 
-    try {
+  try{
 
-      if (!req.file) {
+    if(!req.file){
 
-        return res.json({
+      return res.json({
 
-          quality:
-            "bad",
-
-          reason:
-            "No image",
-
-        });
-
-      }
-
-      if (
-        req.file.size < 50000
-      ) {
-
-        return res.json({
-
-          quality:
-            "bad",
-
-          reason:
-            "Image blurry",
-
-        });
-
-      }
-
-      res.json({
-
-        quality:
-          "good",
-
-      });
-
-    } catch {
-
-      res.status(500).json({
-
-        quality:
-          "bad",
+        quality:"bad",
 
         reason:
-          "Server error",
+        "No image"
 
       });
 
     }
 
+    if(
+
+      req.file.size < 50000
+
+    ){
+
+      return res.json({
+
+        quality:"bad",
+
+        reason:
+        "Image blurry"
+
+      });
+
+    }
+
+    res.json({
+
+      quality:"good"
+
+    });
+
   }
+
+  catch{
+
+    res.status(500).json({
+
+      quality:"bad",
+
+      reason:
+      "Server error"
+
+    });
+
+  }
+
+}
 
 );
 
@@ -361,11 +402,11 @@ app.post(
    ROOT
 ================================= */
 
-app.get("/", (req, res) => {
+app.get("/",(req,res)=>{
 
   res.send(
 
-    "✅ Smart AgroCare Backend Running"
+"✅ Smart AgroCare Backend Running"
 
   );
 
@@ -376,14 +417,14 @@ app.get("/", (req, res) => {
 ================================= */
 
 const PORT =
-  process.env.PORT ||
-  8080;
+process.env.PORT ||
+8080;
 
-app.listen(PORT, () => {
+app.listen(PORT,()=>{
 
   console.log(
 
-    `🚀 Server ${PORT}`
+`🚀 Server ${PORT}`
 
   );
 
