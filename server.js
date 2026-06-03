@@ -1,3 +1,7 @@
+console.log("🚀 SERVER FILE LOADED");
+console.log("🚀 NODE VERSION:", process.version);
+console.log("🚀 PORT:", process.env.PORT);
+console.log("🚀 GEMINI KEY EXISTS:", !!process.env.GEMINI_API_KEY);
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import cors from "cors";
 import express from "express";
